@@ -37,6 +37,10 @@ int main() {
             else
                 printf("error: zero divisor\n");
             break;
+        case '%':
+            op2 = pop();
+            push((int) pop() % (int) op2);
+            break;
         case '\n':
             printf("\t%.8f\n", pop());
             break;
@@ -78,10 +82,23 @@ int getop(char s[]) {
     while ((s[0] = c = getch()) == ' ' || c == '\t');
 
     s[1] = '\0';
-    if (!isdigit(c) && c != '.')
-        return c;
+
+    if (!isdigit(c) && c != '.' && c != '-')
+        return c;               //probably an operator
 
     i = 0;
+
+    if (c == '-') {
+        int next_c = getch();
+        int next_is_not_digit = !isdigit(next_c);
+
+        ungetch(next_c);
+
+        if (next_is_not_digit)
+            return '-';
+
+        while (isdigit(s[++i] = c = getch()));
+    }
 
     if (isdigit(c))
         while (isdigit(s[++i] = c = getch()));
