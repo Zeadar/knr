@@ -1,14 +1,23 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+
+#define NUMBER '0'
+#define CLEAR 'c'
+#define SWAP 's'
+#define DUP 'd'
 
 #define MAXOP 100
-#define NUMBER '0'
 #define MAXVAL 100
 
 int getop(char[]);
 void push(double);
 double pop(void);
+void print_elems(void);
+void clear_elems(void);
+void swap_elems(void);
+void dup_elems(void);
 
 int main() {
     int type;
@@ -17,8 +26,21 @@ int main() {
 
     while ((type = getop(s)) != EOF) {
         switch (type) {
+        case SWAP:
+            swap_elems();
+            break;
+        case DUP:
+            dup_elems();
+            break;
+        case CLEAR:
+            clear_elems();
+            break;
         case NUMBER:
             push(atof(s));
+            break;
+        case '^':
+            op2 = pop();
+            push(pow(pop(), op2));
             break;
         case '+':
             push(pop() + pop());
@@ -42,7 +64,8 @@ int main() {
             push((int) pop() % (int) op2);
             break;
         case '\n':
-            printf("\t%.8f\n", pop());
+            // printf("\t%.8f\n", pop());
+            print_elems();
             break;
         default:
             printf("error: unknown command %s\n", s);
@@ -71,6 +94,34 @@ double pop(void) {
 
     printf("error: cannot pop() empty stack\n");
     return 0.0;
+}
+
+void print_elems(void) {
+    int i;
+    printf("\t");
+    for (i = 0; i < sp; ++i)
+        printf("%.8f ", val[i]);
+    putchar('\n');
+}
+
+void clear_elems(void) {
+    sp = 0;
+}
+
+void dup_elems(void) {
+    if (sp > 0)
+        push(val[sp - 1]);
+    else
+        printf("Nothing to duplicate");
+}
+
+void swap_elems(void) {
+    if (sp > 1) {
+        double temp = val[sp - 1];
+        val[sp - 1] = val[sp - 2];
+        val[sp - 2] = temp;
+    } else
+        printf("Cannot swap less than two values");
 }
 
 int getch(void);
