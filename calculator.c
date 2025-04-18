@@ -89,15 +89,14 @@ int getop(char s[]) {
     i = 0;
 
     if (c == '-') {
-        int next_c = getch();
-        int next_is_not_digit = !isdigit(next_c);
+        c = getch();
 
-        ungetch(next_c);
+        if (!isdigit(c)) {
+            ungetch(c);
+            return '-';         //subtraction operator
+        }
 
-        if (next_is_not_digit)
-            return '-';
-
-        while (isdigit(s[++i] = c = getch()));
+        s[++i] = c;
     }
 
     if (isdigit(c))
