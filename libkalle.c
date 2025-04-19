@@ -18,7 +18,7 @@ int readline(char line[], int max_size) {
     return i;
 }
 
-void reverse(char *to_reverse, int length) {
+/* void reverse(char *to_reverse, int length) {
     char *i, *j, temp;
 
     j = to_reverse + length - 1;
@@ -26,6 +26,16 @@ void reverse(char *to_reverse, int length) {
         temp = *i;
         *i = *j;
         *j = temp;
+    }
+} */
+
+void reverse(char *to_reverse, int length) {
+    char temp;
+    if (length > 1) {
+        temp = *to_reverse;
+        *to_reverse = to_reverse[length - 1];
+        to_reverse[length - 1] = temp;
+        reverse(to_reverse + 1, length - 2);
     }
 }
 
