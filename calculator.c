@@ -18,8 +18,33 @@ void print_elems(void);
 void clear_elems(void);
 void swap_elems(void);
 void dup_elems(void);
+int get_next_arg();
 
-int main() {
+int arg_buf[MAXOP];
+
+// TODO check args for -stdin, if so
+// read from stdin and not args
+int main(int argc, char **argv) {
+    /* gather arguments */
+    {
+        int *write = arg_buf;
+        char *read;
+
+        while (--argc) {
+            read = *++argv;
+
+            while (*read != '\0' && write - arg_buf < MAXOP - 1)
+                *write++ = *read++;
+
+            if (argc - 1 && write - arg_buf < MAXOP - 1)
+                *write++ = ' ';
+        }
+
+        //getop() expects a buffer and not a string
+        *write++ = '\n';
+        *write = EOF;
+    }
+
     int type;
     double op2;
     char s[MAXOP];
@@ -170,7 +195,8 @@ char buf[BUFSIZE];
 int bufp = 0;
 
 int getch(void) {
-    return (bufp > 0) ? buf[--bufp] : getchar();
+    // return (bufp > 0) ? buf[--bufp] : getchar();
+    return (bufp > 0) ? buf[--bufp] : get_next_arg();
 }
 
 void ungetch(int c) {
@@ -178,4 +204,10 @@ void ungetch(int c) {
         printf("ungetch: too many characters\n");
     else
         buf[bufp++] = c;
+}
+
+int *head = arg_buf;
+
+int get_next_arg(void) {
+    return *head++;
 }
