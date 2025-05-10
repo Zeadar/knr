@@ -63,20 +63,20 @@ void itob(int n, char s[], int b) {
     reverse(s, i);
 }
 
-int atoi(char s[]) {
-    int val = 0;
-    int sign = 1;
+// int atoi(char s[]) {
+//     int val = 0;
+//     int sign = 1;
 
-    if (*s == '-') {
-        sign = -1;
-        ++s;
-    }
+//     if (*s == '-') {
+//         sign = -1;
+//         ++s;
+//     }
 
-    while (*s >= '0' && *s <= '9')
-        val = val * 10 + *s++ - '0';
+//     while (*s >= '0' && *s <= '9')
+//         val = val * 10 + *s++ - '0';
 
-    return val * sign;
-}
+//     return val * sign;
+// }
 
 int trim_end(char str[], int len) {
     int i = len - 1;
