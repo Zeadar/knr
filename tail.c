@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "libkalle.c"
@@ -21,6 +22,11 @@ int main(int argc, char **argv) {
 
     if (!tail) {
         fprintf(stderr, "unparsable parameters\n");
+        return 100;
+    }
+
+    if (tail > 1000) {
+        fprintf(stderr, "%d lines. Don't be ridiculous\n", tail);
         return 100;
     }
 
