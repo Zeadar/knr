@@ -1,7 +1,6 @@
 #pragma once
 #include <stdio.h>
 
-/* OBS Returns bytes used and not amount of characters */
 int readline(char line[], int max_size) {
     int i, c;
     i = 0;
