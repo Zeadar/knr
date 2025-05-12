@@ -37,4 +37,4 @@ else
      ./out < /dev/stdin "$@"
 fi
 
-# rm -f out
+rm -f out
