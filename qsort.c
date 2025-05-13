@@ -3,11 +3,15 @@
 #include <string.h>
 #include "libkalle.c"
 
+#define NUMERIC 0b1
+#define REVERSE 0b10
+
 #define MAXLINES 5000
 #define MAXLINESIZE 1024
 char *lineptr[MAXLINES], *str_arena, *arena_head;
 
 char *allocate(int);
+void reverse_array_array(void **, int);
 
 int readlines(char *[]);
 void writelines(char *[], int);
@@ -17,26 +21,47 @@ void knr_qsort(void *[], int, int, int (*)(void *, void *));
 int numcmp(const char *, const char *);
 
 int main(int argc, char **argv) {
-    int nlines, numeric = 0;
+    int nlines, mode = 0;
     str_arena = malloc(MAXLINESIZE * MAXLINES);
     arena_head = str_arena;
 
-    if (argc > 1 && strcmp(argv[1], "-n") == 0)
-        numeric = 1;
+    if (argc > 1 && argv[1][0] == '-') {
+        char *head = &argv[1][1];
+
+        while (*head != '\0') {
+            switch (*head++) {
+            case 'n':
+                mode |= NUMERIC;
+                break;
+            case 'r':
+                mode |= REVERSE;
+                break;
+            default:
+                break;
+            }
+        }
+    }
 
     if ((nlines = readlines(lineptr)) >= 0) {
         knr_qsort((void **) lineptr, 0, nlines - 1,
-                  (int (*)(void *, void *)) (numeric ? numcmp : strcmp));
+                  (int (*)(void *, void *)) ((mode & NUMERIC) ? numcmp :
+                                             strcmp));
+
+        if (mode & REVERSE)
+            reverse_array_array((void *) lineptr, nlines);
+
         writelines(lineptr, nlines);
         return 0;
     } else {
+        //unreachable
         printf("input too big to sort\n");
     }
 
     return 0;
 }
 
-void knr_qsort(void *v[], int left, int right, int (*comp)(void *, void *)) {
+void knr_qsort(void *v[], int left, int right,
+               int (*comp_f)(void *, void *)) {
     int i, last;
 
     // Didn't know it was possible to have prototypes in
@@ -50,11 +75,11 @@ void knr_qsort(void *v[], int left, int right, int (*comp)(void *, void *)) {
     swap(v, left, (left + right) / 2);
     last = left;
     for (i = left + 1; i <= right; ++i)
-        if ((*comp) (v[i], v[left]) < 0)
+        if ((*comp_f) (v[i], v[left]) < 0)
             swap(v, ++last, i);
     swap(v, left, last);
-    knr_qsort(v, left, last - 1, comp);
-    knr_qsort(v, last + 1, right, comp);
+    knr_qsort(v, left, last - 1, comp_f);
+    knr_qsort(v, last + 1, right, comp_f);
 }
 
 void swap(void *v[], int a, int b) {
@@ -92,6 +117,7 @@ int readlines(char *lineptr[]) {
 }
 
 void writelines(char *lineptr[], int lines) {
+    // printf("\n\n\n");
     int i;
     for (i = 0; i < lines; ++i)
         printf("%s", lineptr[i]);
@@ -100,4 +126,10 @@ void writelines(char *lineptr[], int lines) {
 char *allocate(int size) {
     arena_head += size;
     return arena_head - size;
+}
+
+void reverse_array_array(void **to_reverse, int len) {
+    int i, j = len - 1;
+    for (i = 0; i < j; ++i, --j)
+        swap(to_reverse, i, j);
 }
