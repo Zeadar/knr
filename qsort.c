@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +6,7 @@
 
 #define NUMERIC 0b1
 #define REVERSE 0b10
+#define FOLDING 0b100
 
 #define MAXLINES 5000
 #define MAXLINESIZE 1024
@@ -19,6 +21,7 @@ void writelines(char *[], int);
 void knr_qsort(void *[], int, int, int (*)(void *, void *));
 
 int numcmp(const char *, const char *);
+int foldcmp(const char *, const char *);
 
 int main(int argc, char **argv) {
     int nlines, mode = 0;
@@ -36,6 +39,8 @@ int main(int argc, char **argv) {
             case 'r':
                 mode |= REVERSE;
                 break;
+            case 'f':
+                mode |= FOLDING;
             default:
                 break;
             }
@@ -43,9 +48,17 @@ int main(int argc, char **argv) {
     }
 
     if ((nlines = readlines(lineptr)) >= 0) {
-        knr_qsort((void **) lineptr, 0, nlines - 1,
-                  (int (*)(void *, void *)) ((mode & NUMERIC) ? numcmp :
-                                             strcmp));
+        if (mode & NUMERIC)
+            knr_qsort((void **) lineptr, 0, nlines - 1,
+                      (int (*)(void *, void *)) (numcmp));
+
+        if (mode & FOLDING)
+            knr_qsort((void **) lineptr, 0, nlines - 1,
+                      (int (*)(void *, void *)) (foldcmp));
+
+        if ((mode & NUMERIC) == 0 && (mode & FOLDING) == 0)
+            knr_qsort((void **) lineptr, 0, nlines - 1,
+                      (int (*)(void *, void *)) (strcmp));
 
         if (mode & REVERSE)
             reverse_array_array((void *) lineptr, nlines);
@@ -117,7 +130,6 @@ int readlines(char *lineptr[]) {
 }
 
 void writelines(char *lineptr[], int lines) {
-    // printf("\n\n\n");
     int i;
     for (i = 0; i < lines; ++i)
         printf("%s", lineptr[i]);
@@ -132,4 +144,18 @@ void reverse_array_array(void **to_reverse, int len) {
     int i, j = len - 1;
     for (i = 0; i < j; ++i, --j)
         swap(to_reverse, i, j);
+}
+
+int foldcmp(const char *s1, const char *s2) {
+    char v1[MAXLINESIZE], v2[MAXLINESIZE];
+    char *v1_write = v1;
+    char *v2_write = v2;
+
+    while (*s1 != '\0')
+        *v1_write++ = tolower(*s1++);
+
+    while (*s2 != '\0')
+        *v2_write++ = tolower(*s2++);
+
+    return strcmp(v1, v2);
 }
