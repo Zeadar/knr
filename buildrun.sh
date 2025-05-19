@@ -14,7 +14,7 @@
 # use: run < [stdin content] withing gdb instead
 
 flags="-std=gnu99 -ggdb3 -Wall -Wextra -O0 -lm"
-compiler="gcc"
+compiler="clang"
 
 if [ "$2" = "d" ]; then
     $compiler $flags "$1" -o out
