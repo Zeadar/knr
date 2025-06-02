@@ -1,4 +1,5 @@
 #pragma once
+#include <ctype.h>
 #include <stdio.h>
 
 int readline(char line[], int max_size) {
@@ -117,4 +118,45 @@ void formatbytes(char str[], void *bytes, unsigned bytes_n) {
         for (ii = 0; ii < 8; ++ii)
             str[bytes_n * 8 - (i + 1) * 8 + ii] =
                 *b & (1 << (8 - ii - 1)) ? '1' : '0';
+}
+
+int getch_buf = 0;
+
+int getch() {
+    if (getch_buf) {
+        int tmp = getch_buf;
+        getch_buf = 0;
+        return tmp;
+    }
+
+    return getchar();
+}
+
+void ungetch(int c) {
+    getch_buf = c;
+}
+
+int getword(char *word, int lim) {
+    int c;
+    char *w = word;
+
+    while (isspace(c = getch()));
+
+    if (c != EOF)
+        *w++ = c;
+
+    if (!isalpha(c)) {
+        *w = '\0';
+        return c;
+    }
+
+    for (; --lim > 0; ++w)
+        if (!isalnum(*w = getch()) && *w != '_') {
+            ungetch(*w);
+            break;
+        }
+
+    *w = '\0';
+
+    return word[0];
 }
