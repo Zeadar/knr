@@ -13,8 +13,9 @@
 # Don't try to feed arguments into gdb
 # use: run < [stdin content] withing gdb instead
 
-flags="-std=gnu99 -ggdb3 -Wall -Wextra -O0 -lm"
-compiler="clang"
+# flags="-std=gnu99 -ggdb3 -Wall -Wextra -O0 -lm"
+flags="-g -Wall -Wunsupported -lm"
+compiler="tcc"
 
 if [ "$2" = "d" ]; then
     $compiler $flags "$1" -o out
