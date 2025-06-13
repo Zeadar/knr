@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdlib.h>
 #include "types.h"
 #define STEP 4096
@@ -12,6 +13,8 @@ typedef struct slice {
     u8 *end;
     u64 width;
 } slice;
+
+typedef s64 slice_index;
 
 slice slice_create(u64 width) {
     u64 init_size = STEP + (width / STEP) * STEP;
@@ -38,15 +41,25 @@ u64 slice_size(const slice *slice) {
 }
 
 void slice_check_grow(slice *slice) {
-    if (slice->head + slice->width >= slice->end) {
-        u64 bytes_used = slice->head - slice->begin;
-        u64 bytes_full = slice->end - slice->begin;
-        u64 bytes_grow = bytes_full + STEP + (slice->width / STEP) * STEP;
+    if (slice->head + slice->width < slice->end)
+        return;
 
-        slice->begin = realloc(slice->begin, bytes_grow);
-        slice->head = slice->begin + bytes_used;
-        slice->end = slice->begin + bytes_grow;
-    }
+    u64 bytes_used = slice->head - slice->begin;
+    u64 bytes_grow =
+        slice->end - slice->begin + STEP + (slice->width / STEP) * STEP;
+
+    slice->begin = realloc(slice->begin, bytes_grow);
+    slice->head = slice->begin + bytes_used;
+    slice->end = slice->begin + bytes_grow;
+}
+
+slice_index slice_find(slice *slice, void *ptr) {
+    u8 *find_me = ptr;
+
+    if (find_me < slice->begin || find_me >= slice->head)
+        return -1;
+
+    return (find_me - slice->begin) / slice->width;
 }
 
 void *slice_allocate(slice *slice) {
@@ -56,17 +69,14 @@ void *slice_allocate(slice *slice) {
     return slice->head - slice->width;
 }
 
-// TODO: return index instead of pointer
-// returning pointer is faulty because slice grows with realloc()
-// which makes pointer invalid
-void *slice_push(slice *slice, void *data) {
+slice_index slice_push(slice *slice, void *data) {
     slice_check_grow(slice);
 
     u64 byte_width = slice->width;
     while (byte_width--)
         *slice->head++ = *(u8 *) data++;
 
-    return slice->head - slice->width;
+    return (slice->head - slice->begin) / slice->width;
 }
 
 void slice_remove(slice *slice, u64 index) {
@@ -100,8 +110,8 @@ void slice_serial_remove(slice *slice, u64 index) {
     slice->head = slice->head - slice->width;
 }
 
-void *slice_get_ptr(const slice *slice, u64 index) {
-    if (index >= slice_size(slice))
+void *slice_get_ptr(const slice *slice, slice_index index) {
+    if (index >= (slice_index) slice_size(slice) || index < 0)
         return 0;
 
     return slice->begin + index * slice->width;

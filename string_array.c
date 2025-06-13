@@ -12,6 +12,8 @@ typedef struct string_array {
     u64 end;
 } sarray;
 
+typedef u64 str_index;
+
 sarray sarray_create() {
     sarray temp = {
         .ptr = malloc(STEP),
@@ -26,13 +28,14 @@ char *sarray_get(sarray *sarray, u64 index) {
     return sarray->ptr + index;
 }
 
-u64 sarray_push(sarray *sarray, char *c) {
+str_index sarray_push(sarray *sarray, char *c) {
     u64 bytes = strlen(c) + 1;
 
-    if (bytes + sarray->head >= sarray->end)
-        sarray->ptr =
-            realloc(sarray->ptr,
-                    sarray->end + STEP + (bytes / STEP) * STEP);
+    if (bytes + sarray->head >= sarray->end) {
+        u64 growth = sarray->end + STEP + (bytes / STEP) * STEP;
+        sarray->ptr = realloc(sarray->ptr, growth);
+        sarray->end = growth;
+    }
 
     char *head = sarray->ptr + sarray->head;
 
