@@ -22,15 +22,17 @@ slice nodes;
 void addbranch(slice_index, char *, char *);
 void printtree(slice_index);
 
+
 int main() {
     stra = sarray_create();
     nodes = slice_new(struct node);
 
+    char *line_head, *word_head;
+    int line_nr, word_pos, word_len, line_len;
+
     char line_buf[BUFSIZE];
     char word_buf[BUFSIZE];
     char refe_buf[BUFSIZE];
-    char *line_head, *word_head;
-    int line_nr, word_pos, word_len, line_len;
 
     for (line_nr = 1; (line_len = readline(line_buf, BUFSIZE)); ++line_nr) {
         line_head = line_buf;
@@ -38,14 +40,14 @@ int main() {
         while (*line_head != '\0') {
             word_head = word_buf;
 
-            while (!isalnum(*line_head) && *line_head != '\0')
+            while (!isalpha(*line_head) && *line_head != '\0')
                 ++line_head;
 
             word_pos = line_head - line_buf;
 
             for (word_len = 0;
-                 isalnum(*line_head) && word_len < BUFSIZE - 1; ++word_len)
-                *word_head++ = *line_head++;
+                 isalpha(*line_head) && word_len < BUFSIZE - 1; ++word_len)
+                *word_head++ = tolower(*line_head++);
 
             *word_head = '\0';
 
@@ -58,6 +60,12 @@ int main() {
     }
 
     printtree(0);
+
+    // s64 word_amount = slice_size(&nodes) - 1;
+    // node *nptrs = malloc(word_amount * sizeof(node *));
+
+    // for (node * nptr = nptrs; nptr - nptrs < word_amount; ++nptr)
+    //     nptr = slice_get_ptr(&nodes, nptrs - nptr);
 
     printf("String array size: %lu, allocated: %lu\n", stra.head,
            stra.end);
@@ -91,23 +99,34 @@ void addbranch(slice_index si, char *word, char *ref) {
     s64 condition = strcmp(word, word_from_node);
 
     if (condition == 0) {
-        char *old_ref = sarray_get(&stra, nptr->ref_index);
-        char *ref_buf = malloc(strlen(old_ref) + strlen(ref) + 2);
-        strcpy(ref_buf, old_ref);
-        strcat(ref_buf, ref);
-        nptr->ref_index = sarray_push(&stra, ref_buf);
+        str_index old_ref_index = nptr->ref_index;
+        char *old_ref = sarray_get(&stra, old_ref_index);
+        u64 bytes = strlen(old_ref) + strlen(ref) + 1;
+
+        char *new_ref = sarray_allocate(&stra, bytes, &(nptr->ref_index));
+
+        //refetch in case old_ref is obsolete
+        old_ref = sarray_get(&stra, old_ref_index);
+        strcpy(new_ref, old_ref);
+        strcat(new_ref, ref);
+
         nptr->count += 1;
-        free(ref_buf);
     } else if (condition < 0) { // goes left
-        if (nptr->left < 0)
-            nptr->left = alloc_node(word, ref);
-        else
+        if (nptr->left < 0) {
+            slice_index new_node_idx = alloc_node(word, ref);
+            nptr = slice_get_ptr(&nodes, si);   // alloc_node might make the old nptr obsolete
+            nptr->left = new_node_idx;
+        } else {
             addbranch(nptr->left, word, ref);
+        }
     } else {                    // goes right
-        if (nptr->right < 0)
-            nptr->right = alloc_node(word, ref);
-        else
+        if (nptr->right < 0) {
+            slice_index new_node_idx = alloc_node(word, ref);
+            nptr = slice_get_ptr(&nodes, si);   // alloc_node might make the old nptr obsolete
+            nptr->right = new_node_idx;
+        } else {
             addbranch(nptr->right, word, ref);
+        }
     }
 }
 
@@ -119,9 +138,9 @@ void printtree(slice_index index) {
                sarray_get(&stra, nptr->word_index));
         printf("\t%s\n", sarray_get(&stra, nptr->ref_index));
         // printf
-        //     ("ref_index %lu\nword_index %lu\nleft %ld\nright %ld\ncount %lu\n\n",
-        //      nptr->ref_index, nptr->word_index, nptr->left, nptr->right,
-        //      nptr->count);
+        //     ("word: %s\nref_index %lu\nword_index %lu\nleft %ld\nright %ld\ncount %lu\n\n",
+        //      sarray_get(&stra, nptr->word_index), nptr->ref_index,
+        //      nptr->word_index, nptr->left, nptr->right, nptr->count);
         printtree(nptr->left);
         printtree(nptr->right);
     }

@@ -28,14 +28,26 @@ char *sarray_get(sarray *sarray, u64 index) {
     return sarray->ptr + index;
 }
 
+void sarray_check_grow(sarray *sarray, u64 bytes) {
+    if (bytes + sarray->head < sarray->end)
+        return;
+
+    sarray->end += STEP + (bytes / STEP) * STEP;
+    sarray->ptr = realloc(sarray->ptr, sarray->end);
+}
+
+char *sarray_allocate(sarray *sarray, u64 bytes, str_index *index) {
+    sarray_check_grow(sarray, bytes);
+
+    *index = sarray->head;
+    sarray->head += bytes;
+    return sarray->ptr + sarray->head - bytes;
+}
+
 str_index sarray_push(sarray *sarray, char *c) {
     u64 bytes = strlen(c) + 1;
 
-    if (bytes + sarray->head >= sarray->end) {
-        u64 growth = sarray->end + STEP + (bytes / STEP) * STEP;
-        sarray->ptr = realloc(sarray->ptr, growth);
-        sarray->end = growth;
-    }
+    sarray_check_grow(sarray, bytes);
 
     char *head = sarray->ptr + sarray->head;
 

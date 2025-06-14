@@ -48,7 +48,9 @@ void slice_check_grow(slice *slice) {
     u64 bytes_grow =
         slice->end - slice->begin + STEP + (slice->width / STEP) * STEP;
 
-    slice->begin = realloc(slice->begin, bytes_grow);
+    u8 *new = realloc(slice->begin, bytes_grow);
+
+    slice->begin = new;
     slice->head = slice->begin + bytes_used;
     slice->end = slice->begin + bytes_grow;
 }
