@@ -71,14 +71,18 @@ void *slice_allocate(slice *slice) {
     return slice->head - slice->width;
 }
 
-slice_index slice_push(slice *slice, void *data) {
+slice_index slice_push(slice *slice, const void *data) {
     slice_check_grow(slice);
 
-    u64 byte_width = slice->width;
-    while (byte_width--)
-        *slice->head++ = *(u8 *) data++;
+    const u8 *read_head = data;
+    u8 *write_head = slice->head;
+    u64 width = slice->width;
+    while (width--)
+        *write_head++ = *read_head++;
 
-    return (slice->head - slice->begin) / slice->width;
+    slice->head += slice->width;
+
+    return (slice->head - slice->begin - slice->width) / slice->width;
 }
 
 void slice_remove(slice *slice, u64 index) {
@@ -112,9 +116,27 @@ void slice_serial_remove(slice *slice, u64 index) {
     slice->head = slice->head - slice->width;
 }
 
+
 void *slice_get_ptr(const slice *slice, slice_index index) {
     if (index >= (slice_index) slice_size(slice) || index < 0)
         return 0;
 
     return slice->begin + index * slice->width;
+}
+
+void slice_replace(slice *slice, slice_index index, void *data) {
+    u64 bytes_left = slice->width;
+    u8 *read_head = data;
+    u8 *write_head = slice_get_ptr(slice, index);
+
+    while (--bytes_left)
+        *write_head++ = *read_head++;
+}
+
+void slice_foreach(slice *slice, void (*fn)(void *)) {
+    slice_index size = slice_size(slice);
+    slice_index index;
+
+    for (index = 0; index != size; ++index)
+        fn(slice_get_ptr(slice, index));
 }
