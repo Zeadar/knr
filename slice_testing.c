@@ -1,4 +1,5 @@
 #include "slice.c"
+#include "types.h"
 #include <stdio.h>
 
 struct test_set {
@@ -9,6 +10,10 @@ struct test_set {
 };
 
 #define PUSHAMOUNT 10
+
+void print_d(void *ptr) {
+    printf("%d\n", *(s32 *) ptr);
+}
 
 int main() {
     struct slice s1 = slice_new(struct test_set);
@@ -50,6 +55,14 @@ int main() {
     printf("full byte size\t%ld\n", s1.end - s1.begin);
 
     slice_destroy(&s1);
+
+    //Testing size small size_t (on most machines)
+    slice of_ints = slice_new(s16);
+    for (int i = 100; i < 1000; i += 7)
+        slice_push(&of_ints, &i);
+
+    slice_foreach(&of_ints, print_d);
+    printf("width %zu\tsize %zu\n", of_ints.width, slice_size(&of_ints));
 
     return 0;
 }
