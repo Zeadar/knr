@@ -138,5 +138,5 @@ void slice_foreach(slice *slice, void (*fn)(void *)) {
     slice_index index;
 
     for (index = 0; index != size; ++index)
-        fn(slice_get_ptr(slice, index));
+        fn(slice->begin + index * slice->width);
 }
