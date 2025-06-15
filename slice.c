@@ -39,7 +39,7 @@ void slice_destroy(slice *slice) {
     slice->width = 0;
 }
 
-size_t slice_size(const slice *slice) {
+slice_index slice_size(const slice *slice) {
     return (slice->head - slice->begin) / slice->width;
 }
 
@@ -88,24 +88,28 @@ slice_index slice_push(slice *slice, const void *data) {
     return (slice->head - slice->begin - slice->width) / slice->width;
 }
 
-void slice_remove(slice *slice, size_t index) {
-    if (index >= slice_size(slice))
+void slice_remove(slice *slice, slice_index index) {
+    slice_index size = slice_size(slice);
+
+    if (index >= size || index < 0)
         return;
 
-    size_t *here = slice->begin + index * slice->width;
-    size_t *last = slice->head - slice->width;
-    size_t widths_left = slice->width;
+    if (index != size - 1) {
+        size_t *here = slice->begin + index * slice->width;
+        size_t *last = slice->head - slice->width;
+        size_t widths_left = slice->width;
 
-    while (widths_left--)
-        *here++ = *last++;
+        while (widths_left--)
+            *here++ = *last++;
+    }
 
     slice->head = slice->head - slice->width;
 }
 
-void slice_serial_remove(slice *slice, size_t index) {
-    size_t item_size = slice_size(slice);
+void slice_serial_remove(slice *slice, slice_index index) {
+    slice_index item_size = slice_size(slice);
 
-    if (index >= item_size)
+    if (index >= item_size || index < 0)
         return;
 
     if (index != item_size - 1) {
@@ -121,7 +125,7 @@ void slice_serial_remove(slice *slice, size_t index) {
 
 
 void *slice_get_ptr(const slice *slice, slice_index index) {
-    if (index >= (slice_index) slice_size(slice) || index < 0)
+    if (index >= slice_size(slice) || index < 0)
         return 0;
 
     return slice->begin + index * slice->width;
