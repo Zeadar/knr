@@ -49,7 +49,8 @@ int main() {
             word_pos = line_head - line_buf;
 
             for (word_len = 0;
-                 isalpha(*line_head) && word_len < BUFSIZE - 1; ++word_len)
+                 (isalpha(*line_head) || *line_head == '_')
+                 && word_len < BUFSIZE - 1; ++word_len)
                 *word_head++ = tolower(*line_head++);
 
             *word_head = '\0';
