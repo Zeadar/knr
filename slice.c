@@ -80,6 +80,7 @@ slice_index slice_push(slice *slice, const void *data) {
     const size_t *read_head = data;
     size_t *write_head = slice->head;
     size_t widths_left = slice->width;
+
     while (widths_left--)
         *write_head++ = *read_head++;
 
@@ -123,7 +124,6 @@ void slice_serial_remove(slice *slice, slice_index index) {
     slice->head = slice->head - slice->width;
 }
 
-
 void *slice_get_ptr(const slice *slice, slice_index index) {
     if (index >= slice_size(slice) || index < 0)
         return 0;
@@ -146,4 +146,10 @@ void slice_foreach(slice *slice, void (*fn)(void *)) {
 
     for (index = 0; index != size; ++index)
         fn(slice->begin + index * slice->width);
+}
+
+void slice_qsort(slice *slice,
+                 int (*compare_fn)(const void *a, const void *b)) {
+    qsort(slice->begin, slice_size(slice),
+          slice->width * sizeof(size_t), compare_fn);
 }
