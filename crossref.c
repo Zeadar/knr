@@ -55,7 +55,7 @@ int main() {
 
             *word_head = '\0';
 
-            if (word_len) {     //Found word
+            if (word_len > 1) { //Found word and is more than one letter
                 sprintf(refe_buf, "%d, %d; ", line_nr, word_pos);
                 addbranch(0, word_buf, refe_buf);
             }
