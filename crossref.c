@@ -9,13 +9,13 @@
 
 #define BUFSIZE 1024
 
-struct node {
+typedef struct node {
     str_index word_index;
     slice_index ref_index;
     slice_index left;
     slice_index right;
     u64 count;
-} typedef node;
+} node;
 
 sarray stra;
 slice nodes;
@@ -24,6 +24,7 @@ slice refs;
 void addbranch(slice_index, char *, char *);
 void printtree(slice_index);
 void freedom(void *);
+int compare_counts(const void *, const void *);
 
 int main() {
     stra = sarray_create();
@@ -48,8 +49,7 @@ int main() {
 
             word_pos = line_head - line_buf;
 
-            for (word_len = 0;
-                 (isalpha(*line_head) || *line_head == '_')
+            for (word_len = 0; (isalpha(*line_head) || *line_head == '_')
                  && word_len < BUFSIZE - 1; ++word_len)
                 *word_head++ = tolower(*line_head++);
 
@@ -63,15 +63,48 @@ int main() {
 
     }
 
-    printtree(0);
+    // printtree(0);
 
-    printf("String array size: %lu, allocated: %lu\n", stra.head,
-           stra.end);
-    printf("nodes size: %lu\n", slice_size(&nodes));
+    // printf("String array size: %lu, allocated: %lu\n", stra.head,
+    //        stra.end);
+    // printf("nodes size: %lu\n", slice_size(&nodes));
+
+    slice to_sort = slice_new(node *);
+
+    {
+        slice_index i = 0;
+        node *nptr;
+        for (;;) {
+            nptr = slice_get_ptr(&nodes, i++);
+            if (!nptr)
+                break;
+
+            slice_push(&to_sort, &nptr);
+        }
+    }
+
+    slice_qsort(&nodes, compare_counts);
+
+    {
+        slice_index i = 0;
+        node *nptr;
+        node **nptrptr;
+        for (;;) {
+            nptrptr = slice_get_ptr(&to_sort, i++);
+            if (!nptrptr)
+                break;
+
+            nptr = *nptrptr;
+
+            printf("%.4lu %s\n", nptr->count,
+                   sarray_get(&stra, nptr->word_index));
+        }
+    }
 
     slice_foreach(&refs, freedom);
     slice_destroy(&refs);
     slice_destroy(&nodes);
+    slice_destroy(&to_sort);
     sarray_destroy(&stra);
 
     return 0;
@@ -149,4 +182,11 @@ void printtree(slice_index index) {
         printtree(nptr->left);
         printtree(nptr->right);
     }
+}
+
+int compare_counts(const void *a, const void *b) {
+    const node *sa = a;
+    const node *sb = b;
+
+    return sb->count - sa->count;
 }
