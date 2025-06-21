@@ -14,24 +14,25 @@ typedef struct slice {
     size_t *head;
     size_t *end;
     size_t width;
-} slice;
+} Slice;
 
 typedef ptrdiff_t slice_index;
 
-slice slice_create(size_t byte_width) {
+Slice slice_create(size_t byte_width) {
     size_t width = byte_width / GRIDSIZE < 1 ? 1 : byte_width / GRIDSIZE;
     size_t init_size = STEPSIZE + (width / STEPSIZE) * STEPSIZE;
 
-    struct slice slice;
-    slice.begin = malloc(init_size * GRIDSIZE);
-    slice.head = slice.begin;
-    slice.end = slice.begin + init_size;
-    slice.width = width;
+    Slice slice = {
+        .begin = malloc(init_size * GRIDSIZE),
+        .head = slice.begin,
+        .end = slice.begin + init_size,
+        .width = width,
+    };
 
     return slice;
 }
 
-void slice_destroy(slice *slice) {
+void slice_destroy(Slice *slice) {
     free(slice->begin);
     slice->begin = 0;
     slice->head = 0;
@@ -39,11 +40,15 @@ void slice_destroy(slice *slice) {
     slice->width = 0;
 }
 
-slice_index slice_size(const slice *slice) {
+slice_index slice_size(const Slice *slice) {
     return (slice->head - slice->begin) / slice->width;
 }
 
-void slice_check_grow(slice *slice) {
+slice_index slice_room(const Slice *slice) {
+    return (slice->end - slice->begin) / slice->width;
+}
+
+void slice_check_grow(Slice *slice) {
     if (slice->head + slice->width < slice->end)
         return;
 
@@ -59,7 +64,7 @@ void slice_check_grow(slice *slice) {
     slice->end = slice->begin + grow_size;
 }
 
-slice_index slice_find(slice *slice, void *ptr) {
+slice_index slice_find(Slice *slice, void *ptr) {
     size_t *find_me = ptr;
 
     if (find_me < slice->begin || find_me >= slice->head)
@@ -68,14 +73,14 @@ slice_index slice_find(slice *slice, void *ptr) {
     return (find_me - slice->begin) / slice->width;
 }
 
-void *slice_allocate(slice *slice) {
+void *slice_allocate(Slice *slice) {
     slice_check_grow(slice);
 
     slice->head += slice->width;
     return slice->head - slice->width;
 }
 
-slice_index slice_push(slice *slice, const void *data) {
+slice_index slice_push(Slice *slice, const void *data) {
     slice_check_grow(slice);
 
     const size_t *read_head = data;
@@ -90,11 +95,11 @@ slice_index slice_push(slice *slice, const void *data) {
     return (slice->head - slice->begin - slice->width) / slice->width;
 }
 
-void slice_remove(slice *slice, slice_index index) {
+void slice_remove(Slice *slice, slice_index index) {
     slice_index size = slice_size(slice);
 
-    if (index >= size || index < 0)
-        return;
+    // if (index >= size || index < 0)
+    //     return;
 
     if (index != size - 1) {
         size_t *here = slice->begin + index * slice->width;
@@ -108,7 +113,7 @@ void slice_remove(slice *slice, slice_index index) {
     slice->head = slice->head - slice->width;
 }
 
-void slice_serial_remove(slice *slice, slice_index index) {
+void slice_serial_remove(Slice *slice, slice_index index) {
     slice_index item_size = slice_size(slice);
 
     if (index >= item_size || index < 0)
@@ -125,14 +130,14 @@ void slice_serial_remove(slice *slice, slice_index index) {
     slice->head = slice->head - slice->width;
 }
 
-void *slice_get_ptr(const slice *slice, slice_index index) {
-    if (index >= slice_size(slice) || index < 0)
-        return 0;
+void *slice_get_ptr(const Slice *slice, slice_index index) {
+    // if (index >= slice_size(slice) || index < 0)
+    //     return 0;
 
     return slice->begin + index * slice->width;
 }
 
-void slice_replace(slice *slice, slice_index index, void *data) {
+void slice_replace(Slice *slice, slice_index index, void *data) {
     size_t widths_left = slice->width;
     size_t *read_head = data;
     size_t *write_head = slice_get_ptr(slice, index);
@@ -141,7 +146,7 @@ void slice_replace(slice *slice, slice_index index, void *data) {
         *write_head++ = *read_head++;
 }
 
-void slice_foreach(slice *slice, void (*fn)(void *)) {
+void slice_foreach(Slice *slice, void (*fn)(void *)) {
     slice_index size = slice_size(slice);
     slice_index index;
 
@@ -149,7 +154,7 @@ void slice_foreach(slice *slice, void (*fn)(void *)) {
         fn(slice->begin + index * slice->width);
 }
 
-void slice_qsort(slice *slice,
+void slice_qsort(Slice *slice,
                  int (*compare_fn)(const void *a, const void *b)) {
     qsort(slice->begin, slice_size(slice),
           slice->width * sizeof(size_t), compare_fn);
