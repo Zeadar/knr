@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #define GRIDSIZE sizeof(size_t)
 //4096: assumed page size
-#define BYTESTEP 4096
-#define STEP (BYTESTEP / GRIDSIZE)
+#define BYTESTEPSIZE 4096
+#define STEPSIZE (BYTESTEPSIZE / GRIDSIZE)
 #define slice_new(data_t) slice_create(sizeof(data_t))
 #define slice_get(data_t, slice, index) *(data_t *)slice_get_ptr(slice, index)
 
@@ -20,7 +20,7 @@ typedef ptrdiff_t slice_index;
 
 slice slice_create(size_t byte_width) {
     size_t width = byte_width / GRIDSIZE < 1 ? 1 : byte_width / GRIDSIZE;
-    size_t init_size = STEP + (width / STEP) * STEP;
+    size_t init_size = STEPSIZE + (width / STEPSIZE) * STEPSIZE;
 
     struct slice slice;
     slice.begin = malloc(init_size * GRIDSIZE);
@@ -49,7 +49,8 @@ void slice_check_grow(slice *slice) {
 
     size_t used_size = slice->head - slice->begin;
     size_t grow_size =
-        slice->end - slice->begin + STEP + (slice->width / STEP) * STEP;
+        slice->end - slice->begin + STEPSIZE +
+        (slice->width / STEPSIZE) * STEPSIZE;
 
     size_t *new = realloc(slice->begin, grow_size * GRIDSIZE);
 
