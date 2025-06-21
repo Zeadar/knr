@@ -13,8 +13,8 @@ struct tnode {
     struct tnode *right;
 };
 
-slice tree_container;
-sarray str_array;
+Slice tree_container;
+Sarray str_array;
 
 struct tnode *addtree(struct tnode *, char *);
 struct tnode *talloc(void);
@@ -29,9 +29,9 @@ int main() {
 
     root = 0;
 
-    while (getword(word, MAXWORD) != EOF)
-        if (isalpha(word[0]))
-            root = addtree(root, word);
+    while (getword(word, MAXWORD))
+        // if (isalpha(word[0]))
+        root = addtree(root, word);
 
     treeprint(root);
 
