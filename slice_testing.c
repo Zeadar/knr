@@ -57,7 +57,7 @@ int main() {
     slice_destroy(&s1);
 
     //Testing size small size_t (on most machines)
-    slice of_ints = slice_new(s16);
+    Slice of_ints = slice_new(s16);
     for (int i = 100; i < 1000; i += 7)
         slice_push(&of_ints, &i);
 
