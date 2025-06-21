@@ -1,6 +1,7 @@
 #pragma once
 #include <ctype.h>
 #include <stdio.h>
+#include "types.h"
 
 int readline(char line[], int max_size) {
     int i, c;
@@ -136,27 +137,23 @@ void ungetch(int c) {
     getch_buf = c;
 }
 
-int getword(char *word, int lim) {
+int getword(char *buffer, int buf_size) {
     int c;
-    char *w = word;
+    char *head = buffer;
 
-    while (isspace(c = getch()));
+    while (!isalnum(c = getch()) && c > 0);
 
-    if (c != EOF)
-        *w++ = c;
-
-    if (!isalpha(c)) {
-        *w = '\0';
-        return c;
+    if (c < 1) {
+        ungetch(c);
+        return 0;
     }
 
-    for (; --lim > 0; ++w)
-        if (!isalnum(*w = getch()) && *w != '_') {
-            ungetch(*w);
-            break;
-        }
+    do {
+        *head++ = tolower(c);
+    } while (isalnum(c = getch()) && --buf_size);
 
-    *w = '\0';
+    *head = '\0';
+    ungetch(c);
 
-    return word[0];
+    return head - buffer;
 }
