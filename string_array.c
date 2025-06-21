@@ -2,33 +2,39 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "types.h"
+#include "slice.c"
 
 #define STEP 4096
 
 typedef struct string_array {
     char *ptr;
-    u64 head;
-    u64 end;
-} sarray;
+    size_t head;
+    size_t end;
+    Slice table;
+} Sarray;
 
-typedef u64 str_index;
+typedef size_t str_index;
 
-sarray sarray_create() {
-    sarray temp = {
+Sarray sarray_create() {
+    Sarray sarray = {
         .ptr = malloc(STEP),
         .head = 0,
         .end = STEP,
+        .table = slice_new(str_index),
     };
 
-    return temp;
+    return sarray;
 }
 
-char *sarray_get(sarray *sarray, u64 index) {
-    return sarray->ptr + index;
+char *sarray_get(Sarray *sarray, slice_index index) {
+    return sarray->ptr + slice_get(str_index, &sarray->table, index);
 }
 
-void sarray_check_grow(sarray *sarray, u64 bytes) {
+slice_index sarray_size(Sarray *sarray) {
+    return slice_size(&sarray->table);
+}
+
+void sarray_check_grow(Sarray *sarray, size_t bytes) {
     if (bytes + sarray->head < sarray->end)
         return;
 
@@ -36,34 +42,52 @@ void sarray_check_grow(sarray *sarray, u64 bytes) {
     sarray->ptr = realloc(sarray->ptr, sarray->end);
 }
 
-char *sarray_allocate(sarray *sarray, u64 bytes, str_index *index) {
-    sarray_check_grow(sarray, bytes);
-
-    *index = sarray->head;
-    sarray->head += bytes;
-    return sarray->ptr + sarray->head - bytes;
-}
-
-str_index sarray_push(sarray *sarray, char *c) {
-    u64 bytes = strlen(c) + 1;
+slice_index sarray_push(Sarray *sarray, char *str) {
+    size_t bytes = strlen(str) + 1;
 
     sarray_check_grow(sarray, bytes);
 
     char *head = sarray->ptr + sarray->head;
 
-    while (*c != '\0')
-        *head++ = *c++;
+    while (*str != '\0')
+        *head++ = *str++;
 
     *head++ = '\0';
 
+    slice_index index = slice_push(&sarray->table, &sarray->head);
     sarray->head += bytes;
 
-    return sarray->head - bytes;
+    return index;
 }
 
-void sarray_destroy(sarray *sarray) {
+void sarray_remove(Sarray *sarray, slice_index index) {
+    char *culprit = sarray_get(sarray, index);
+    size_t bytes = strlen(culprit) + 1;
+
+    char *write = culprit;
+    char *read = culprit + bytes;
+
+    while (read != sarray->ptr + sarray->head) {
+        *write = *read;
+
+        if (*write == '\0') {
+            str_index here = (write + 1) - sarray->ptr;
+            slice_replace(&sarray->table, ++index, &here);
+        }
+
+        ++write;
+        ++read;
+    }
+
+    sarray->head -= bytes;
+
+    slice_remove(&sarray->table, index);
+}
+
+void sarray_destroy(Sarray *sarray) {
     free(sarray->ptr);
     sarray->ptr = 0;
     sarray->head = 0;
     sarray->end = 0;
+    slice_destroy(&sarray->table);
 }
