@@ -26,11 +26,11 @@ Sarray sarray_create() {
     return sarray;
 }
 
-char *sarray_get(Sarray *sarray, slice_index index) {
+char *sarray_get(const Sarray *sarray, slice_index index) {
     return sarray->ptr + slice_get(str_index, &sarray->table, index);
 }
 
-slice_index sarray_size(Sarray *sarray) {
+slice_index sarray_size(const Sarray *sarray) {
     return slice_size(&sarray->table);
 }
 
@@ -42,7 +42,7 @@ void sarray_check_grow(Sarray *sarray, size_t bytes) {
     sarray->ptr = realloc(sarray->ptr, sarray->end);
 }
 
-slice_index sarray_push(Sarray *sarray, char *str) {
+slice_index sarray_push(Sarray *sarray, const char *str) {
     size_t bytes = strlen(str) + 1;
 
     sarray_check_grow(sarray, bytes);
