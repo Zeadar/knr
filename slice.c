@@ -80,8 +80,6 @@ s8 slice_index_in_bounds(const Slice *slice, slice_index index) {
 }
 
 void *slice_get_ptr(const Slice *slice, slice_index index) {
-    // if ()
-    //     return 0;
 
     return slice->begin + index * slice->width;
 }
@@ -110,9 +108,6 @@ slice_index slice_push(Slice *slice, const void *data) {
 
 void slice_remove(Slice *slice, slice_index index) {
     slice_index size = slice_size(slice);
-
-    // if (index >= size || index < 0)
-    //     return;
 
     if (index != size - 1) {
         size_t *here = slice->begin + index * slice->width;
