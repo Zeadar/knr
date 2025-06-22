@@ -29,7 +29,7 @@ if [ "$2" = "d" ]; then
 elif [ "$2" = "v" ]; then
     $compiler $flags "$1" -o out
     shift 2
-    valgrind -- ./out "$@" < /dev/stdin 
+    valgrind --track-origins=yes -- ./out "$@" < /dev/stdin 
 elif [ "$2" = "t" ]; then
     time $compiler $flags "$1" -o out "$@"
 else
