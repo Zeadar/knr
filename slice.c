@@ -138,9 +138,9 @@ void slice_serial_remove(Slice *slice, slice_index index) {
     slice->head = slice->head - slice->width;
 }
 
-void slice_replace(Slice *slice, slice_index index, void *data) {
+void slice_replace(Slice *slice, const slice_index index, const void *data) {
     size_t widths_left = slice->width;
-    size_t *read_head = data;
+    const size_t *read_head = data;
     size_t *write_head = slice_get_ptr(slice, index);
 
     while (widths_left--)
