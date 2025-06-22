@@ -17,9 +17,9 @@ typedef struct node {
     u64 count;
 } node;
 
-sarray stra;
-slice nodes;
-slice refs;
+Sarray stra;
+Slice nodes;
+Slice refs;
 
 void addbranch(slice_index, char *, char *);
 void printtree(slice_index);
@@ -69,16 +69,13 @@ int main() {
     //        stra.end);
     // printf("nodes size: %lu\n", slice_size(&nodes));
 
-    slice to_sort = slice_new(node *);
+    Slice to_sort = slice_new(node *);
 
     {
-        slice_index i = 0;
         node *nptr;
-        for (;;) {
-            nptr = slice_get_ptr(&nodes, i++);
-            if (!nptr)
-                break;
-
+        slice_index stop = slice_size(&nodes);
+        for (slice_index i = 0; i != stop; ++i) {
+            nptr = slice_get_ptr(&nodes, i);
             slice_push(&to_sort, &nptr);
         }
     }
@@ -86,13 +83,11 @@ int main() {
     slice_qsort(&nodes, compare_counts);
 
     {
-        slice_index i = 0;
         node *nptr;
         node **nptrptr;
-        for (;;) {
-            nptrptr = slice_get_ptr(&to_sort, i++);
-            if (!nptrptr)
-                break;
+        slice_index stop = slice_size(&to_sort);
+        for (slice_index i = 0; i != stop; ++i) {
+            nptrptr = slice_get_ptr(&to_sort, i);
 
             nptr = *nptrptr;
 
@@ -126,13 +121,12 @@ slice_index alloc_node(char *word, char *ref) {
 }
 
 void addbranch(slice_index si, char *word, char *ref) {
-    node *nptr = slice_get_ptr(&nodes, si);
-
-    if (!nptr) {
+    if (!slice_index_in_bounds(&nodes, si)) {
         alloc_node(word, ref);
         return;
     }
 
+    node *nptr = slice_get_ptr(&nodes, si);
     char *word_from_node = sarray_get(&stra, nptr->word_index);
     s64 condition = strcmp(word, word_from_node);
 

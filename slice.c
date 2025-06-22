@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include "types.h"
 #define GRIDSIZE sizeof(size_t)
 //4096: assumed page size
 #define BYTESTEPSIZE 4096
@@ -64,13 +65,25 @@ void slice_check_grow(Slice *slice) {
     slice->end = slice->begin + grow_size;
 }
 
-slice_index slice_find(Slice *slice, void *ptr) {
+s8 slice_ptr_in_bounds(const Slice *slice, void *ptr) {
     size_t *find_me = ptr;
+    return find_me >= slice->begin && find_me < slice->head;
+}
 
-    if (find_me < slice->begin || find_me >= slice->head)
-        return -1;
-
+slice_index slice_find(const Slice *slice, void *ptr) {
+    size_t *find_me = ptr;
     return (find_me - slice->begin) / slice->width;
+}
+
+s8 slice_index_in_bounds(const Slice *slice, slice_index index) {
+    return index < slice_size(slice) && index >= 0;
+}
+
+void *slice_get_ptr(const Slice *slice, slice_index index) {
+    // if ()
+    //     return 0;
+
+    return slice->begin + index * slice->width;
 }
 
 void *slice_allocate(Slice *slice) {
@@ -128,13 +141,6 @@ void slice_serial_remove(Slice *slice, slice_index index) {
     }
 
     slice->head = slice->head - slice->width;
-}
-
-void *slice_get_ptr(const Slice *slice, slice_index index) {
-    // if (index >= slice_size(slice) || index < 0)
-    //     return 0;
-
-    return slice->begin + index * slice->width;
 }
 
 void slice_replace(Slice *slice, slice_index index, void *data) {
