@@ -91,8 +91,18 @@ int main() {
 
             nptr = *nptrptr;
 
-            printf("%.4lu %s\n", nptr->count,
+            char *ref = *(char **) slice_get_ptr(&refs, nptr->ref_index);
+
+            printf("%6lu %s\n\t", nptr->count,
                    sarray_get(&stra, nptr->word_index));
+
+            for (char *r = ref; r != ref + strlen(ref); ++r) {
+                if ((r - ref) % 120 == 0)
+                    printf("\n\t");
+                putchar(*r);
+            }
+            putchar('\n');
+            putchar('\n');
         }
     }
 
