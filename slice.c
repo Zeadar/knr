@@ -1,3 +1,7 @@
+// TODO
+// Get rid of the GRIDSIZE width nonsense and use memcpy() instead of
+// grabbing blocks of 8 bytes (sizeof(size_t))
+// this can malfunction on items smaller than size_t
 #pragma once
 
 #include <stddef.h>
@@ -20,7 +24,11 @@ typedef struct slice {
 typedef ptrdiff_t slice_index;
 
 Slice slice_create(size_t byte_width) {
-    size_t width = byte_width / GRIDSIZE < 1 ? 1 : byte_width / GRIDSIZE;
+    size_t width = byte_width / GRIDSIZE;
+
+    if (byte_width % GRIDSIZE != 0)
+        ++width;
+
     size_t init_size = STEPSIZE + (width / STEPSIZE) * STEPSIZE;
 
     Slice slice = {
@@ -49,7 +57,7 @@ slice_index slice_room(const Slice *slice) {
     return (slice->end - slice->begin) / slice->width;
 }
 
-void slice_check_grow(Slice *slice) {
+static void slice_check_grow(Slice *slice) {
     if (slice->head + slice->width < slice->end)
         return;
 

@@ -1,68 +1,115 @@
 #include "slice.c"
-#include "types.h"
+#include <assert.h>
 #include <stdio.h>
 
-struct test_set {
-    long data_a;                //8 bytes
-    long data_b;
-    long data_c;
-    long data_d;
+struct test_set1 {
+    int a;
+    int b;
+    char c;
 };
 
-#define PUSHAMOUNT 10
+void test_set1(void *ptr) {
+    struct test_set1 *ts = ptr;
+    assert(ts->a == ts->b);
+    assert(ts->b == ts->c);
+}
 
-void print_d(void *ptr) {
-    printf("%d\n", *(s32 *) ptr);
+void test_push_and_get() {
+    Slice s = slice_new(int);
+    int x = 42;
+    slice_push(&s, &x);
+    int value = slice_get(int, &s, 0);
+    assert(value == 42);
+    slice_destroy(&s);
+    printf("test_push_and_get passed\n");
+}
+
+void test_replace() {
+    Slice s = slice_new(int);
+    int x = 10, y = 20;
+    slice_push(&s, &x);
+    slice_replace(&s, 0, &y);
+    int value = slice_get(int, &s, 0);
+    assert(value == 20);
+    slice_destroy(&s);
+    printf("test_replace passed\n");
+}
+
+void test_remove_last() {
+    Slice s = slice_new(int);
+    int a = 1, b = 2, c = 3;
+    slice_push(&s, &a);
+    slice_push(&s, &b);
+    slice_push(&s, &c);
+    slice_remove(&s, 2);        // remove last
+    assert(slice_size(&s) == 2);
+    assert(slice_get(int, &s, 0) == 1);
+    assert(slice_get(int, &s, 1) == 2);
+    slice_destroy(&s);
+    printf("test_remove_last passed\n");
+}
+
+void test_serial_remove_middle() {
+    Slice s = slice_new(int);
+    for (int i = 0; i < 5; ++i)
+        slice_push(&s, &i);
+    slice_serial_remove(&s, 2);
+    assert(slice_size(&s) == 4);
+    assert(slice_get(int, &s, 2) == 3);
+    assert(slice_get(int, &s, 3) == 4);
+    slice_destroy(&s);
+    printf("test_serial_remove_middle passed\n");
+}
+
+void test_size_and_room() {
+    Slice s = slice_new(int);
+    for (int i = 0; i < 10; ++i)
+        slice_push(&s, &i);
+    assert(slice_size(&s) == 10);
+    assert(slice_room(&s) >= 10);
+    slice_destroy(&s);
+    printf("test_size_and_room passed\n");
+}
+
+void test_bounds_checking() {
+    Slice s = slice_new(int);
+    int x = 5;
+    slice_push(&s, &x);
+
+    assert(slice_index_in_bounds(&s, 0) == 1);
+    assert(slice_index_in_bounds(&s, 1) == 0);
+    assert(slice_ptr_in_bounds(&s, slice_get_ptr(&s, 0)) == 1);
+
+    slice_destroy(&s);
+    printf("test_bounds_checking passed\n");
 }
 
 int main() {
-    struct slice s1 = slice_new(struct test_set);
+    // Your original test
+    Slice s1 = slice_new(struct test_set1);
+    struct test_set1 ts1;
 
-    for (int i = 0; i != PUSHAMOUNT; ++i) {
-        struct test_set ts = {
-            i,
-            PUSHAMOUNT - i,
-            i - PUSHAMOUNT,
-            i + PUSHAMOUNT,
-        };
+    printf("size of struct %lu\n", sizeof(struct test_set1));
+    printf("slice width %zu\n", s1.width);
 
-        slice_push(&s1, &ts);
+    for (int i = 0; i != 10; ++i) {
+        ts1.a = i;
+        ts1.b = i;
+        ts1.c = i;
+        slice_push(&s1, &ts1);
     }
 
-    slice_serial_remove(&s1, 2);
-    printf("removed index 2\n");
-
-    for (int i = 0; i <= PUSHAMOUNT; ++i) {
-        struct test_set *ts1 = slice_get_ptr(&s1, i);
-        printf("%p\n", ts1);
-
-        if (ts1) {
-            printf("data_a %ld\tdata_b %ld\tddata_c %ld\tdata_d %ld\n",
-                   ts1->data_a, ts1->data_b, ts1->data_c, ts1->data_d);
-        }
-    }
-
-    struct test_set ts2 = slice_get(struct test_set, &s1, PUSHAMOUNT / 2);
-    printf("data_a %ld\tdata_b %ld\tddata_c %ld\tdata_d %ld\n",
-           ts2.data_a, ts2.data_b, ts2.data_c, ts2.data_d);
-
-
-    printf("data_a %ld\tdata_b %ld\tddata_c %ld\tdata_d %ld\n",
-           ts2.data_a, ts2.data_b, ts2.data_c, ts2.data_d);
-
-    printf("size\t%ld\n", slice_size(&s1));
-    printf("byte size\t%ld\n", s1.head - s1.begin);
-    printf("full byte size\t%ld\n", s1.end - s1.begin);
-
+    slice_foreach(&s1, test_set1);
     slice_destroy(&s1);
 
-    //Testing size small size_t (on most machines)
-    Slice of_ints = slice_new(s16);
-    for (int i = 100; i < 1000; i += 7)
-        slice_push(&of_ints, &i);
+    // Additional tests from chatgpt
+    test_push_and_get();
+    test_replace();
+    test_remove_last();
+    test_serial_remove_middle();
+    test_size_and_room();
+    test_bounds_checking();
 
-    slice_foreach(&of_ints, print_d);
-    printf("width %zu\tsize %zu\n", of_ints.width, slice_size(&of_ints));
-
+    printf("All tests passed.\n");
     return 0;
 }
