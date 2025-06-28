@@ -1,38 +1,28 @@
-// TODO
-// Get rid of the GRIDSIZE width nonsense and use memcpy() instead of
-// grabbing blocks of 8 bytes (sizeof(size_t))
-// this can malfunction on items smaller than size_t
 #pragma once
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include "types.h"
-#define GRIDSIZE sizeof(size_t)
 //4096: assumed page size
-#define BYTESTEPSIZE 4096
-#define STEPSIZE (BYTESTEPSIZE / GRIDSIZE)
+#define STEPSIZE 4096
 #define slice_new(data_t) slice_create(sizeof(data_t))
-#define slice_get(data_t, slice, index) *(data_t *)slice_get_ptr(slice, index)
+#define slice_get(data_t, slice, index) (*(data_t *)slice_get_ptr(slice, index))
 
 typedef struct slice {
-    size_t *begin;
-    size_t *head;
-    size_t *end;
+    u8 *begin;
+    u8 *head;
+    u8 *end;
     size_t width;
 } Slice;
 
 typedef ptrdiff_t slice_index;
 
-Slice slice_create(size_t byte_width) {
-    size_t width = byte_width / GRIDSIZE;
-
-    if (byte_width % GRIDSIZE != 0)
-        ++width;
-
+Slice slice_create(size_t width) {
     size_t init_size = STEPSIZE + (width / STEPSIZE) * STEPSIZE;
 
     Slice slice = {
-        .begin = malloc(init_size * GRIDSIZE),
+        .begin = malloc(init_size),
         .head = slice.begin,
         .end = slice.begin + init_size,
         .width = width,
@@ -66,20 +56,18 @@ static void slice_check_grow(Slice *slice) {
         slice->end - slice->begin + STEPSIZE +
         (slice->width / STEPSIZE) * STEPSIZE;
 
-    size_t *new = realloc(slice->begin, grow_size * GRIDSIZE);
-
-    slice->begin = new;
+    slice->begin = realloc(slice->begin, grow_size);
     slice->head = slice->begin + used_size;
     slice->end = slice->begin + grow_size;
 }
 
 s8 slice_ptr_in_bounds(const Slice *slice, void *ptr) {
-    size_t *find_me = ptr;
+    u8 *find_me = ptr;
     return find_me >= slice->begin && find_me < slice->head;
 }
 
 slice_index slice_find(const Slice *slice, void *ptr) {
-    size_t *find_me = ptr;
+    u8 *find_me = ptr;
     return (find_me - slice->begin) / slice->width;
 }
 
@@ -101,57 +89,38 @@ void *slice_allocate(Slice *slice) {
 slice_index slice_push(Slice *slice, const void *data) {
     slice_check_grow(slice);
 
-    const size_t *read_head = data;
-    size_t *write_head = slice->head;
-    size_t widths_left = slice->width;
-
-    while (widths_left--)
-        *write_head++ = *read_head++;
-
+    memcpy(slice->head, data, slice->width);
     slice->head += slice->width;
 
     return (slice->head - slice->begin - slice->width) / slice->width;
 }
 
 void slice_remove(Slice *slice, slice_index index) {
-    slice_index size = slice_size(slice);
+    if (index != slice_size(slice) - 1) {
+        u8 *last = slice->head - slice->width;
+        u8 *here = slice->begin + index * slice->width;
 
-    if (index != size - 1) {
-        size_t *here = slice->begin + index * slice->width;
-        size_t *last = slice->head - slice->width;
-        size_t widths_left = slice->width;
-
-        while (widths_left--)
-            *here++ = *last++;
+        memcpy(here, last, slice->width);
     }
 
     slice->head = slice->head - slice->width;
 }
 
 void slice_serial_remove(Slice *slice, slice_index index) {
-    slice_index item_size = slice_size(slice);
+    slice_index last_index = slice_size(slice) - 1;
 
-    if (index >= item_size || index < 0)
-        return;
+    if (index != last_index) {
+        u8 *here = slice->begin + index * slice->width;
+        u8 *ahead = here + slice->width;
 
-    if (index != item_size - 1) {
-        size_t *here = slice->begin + index * slice->width;
-        size_t *next = slice->begin + (index + 1) * slice->width;
-
-        while (next != slice->head)
-            *here++ = *next++;
+        memmove(here, ahead, slice->head - ahead);
     }
 
     slice->head = slice->head - slice->width;
 }
 
 void slice_replace(Slice *slice, const slice_index index, const void *data) {
-    size_t widths_left = slice->width;
-    const size_t *read_head = data;
-    size_t *write_head = slice_get_ptr(slice, index);
-
-    while (widths_left--)
-        *write_head++ = *read_head++;
+    memcpy(slice->begin + index * slice->width, data, slice->width);
 }
 
 void slice_foreach(Slice *slice, void (*fn)(void *)) {
@@ -162,8 +131,6 @@ void slice_foreach(Slice *slice, void (*fn)(void *)) {
         fn(slice->begin + index * slice->width);
 }
 
-void slice_qsort(Slice *slice,
-                 int (*compare_fn)(const void *a, const void *b)) {
-    qsort(slice->begin, slice_size(slice),
-          slice->width * sizeof(size_t), compare_fn);
+void slice_qsort(Slice *slice, int (*cmp)(const void *a, const void *b)) {
+    qsort(slice->begin, slice_size(slice), slice->width, cmp);
 }

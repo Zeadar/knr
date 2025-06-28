@@ -85,7 +85,6 @@ void test_bounds_checking() {
 }
 
 int main() {
-    // Your original test
     Slice s1 = slice_new(struct test_set1);
     struct test_set1 ts1;
 
