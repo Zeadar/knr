@@ -80,7 +80,6 @@ s8 slice_index_in_bounds(const Slice *slice, slice_index index) {
 }
 
 void *slice_get_ptr(const Slice *slice, slice_index index) {
-
     return slice->begin + index * slice->width;
 }
 

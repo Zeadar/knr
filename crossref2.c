@@ -8,7 +8,7 @@ Map hashmap;
 
 void each(char *key, void *value) {
     u64 *v = value;
-    printf("%.4ld %s\n", *v, key);
+    printf("%6ld %s\n", *v, key);
 }
 
 int main() {
