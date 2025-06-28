@@ -5,7 +5,7 @@
 #include "slice.c"
 #include "types.h"
 #include "string_array.c"
-#define GROWSIZE 4096
+#define GROWSIZE 512
 #define hashy_new(data_t) hashy_create(sizeof(data_t))
 
 typedef struct hash_map {
@@ -25,6 +25,20 @@ u64 fnv1a(const char *str) {
     return hash;
 }
 
+void hashy_rehash(Map *map) {
+    memset(map->map, ~0, map->size * sizeof(slice_index));
+
+    for (slice_index i = 0; i != map->used; ++i) {
+        u64 hash_index =
+            fnv1a(sarray_get(&map->keys, i)) % (map->size - 1);
+
+        while (map->map[hash_index] != -1)
+            hash_index = (hash_index + 1) % (map->size - 1);
+
+        map->map[hash_index] = i;
+    }
+}
+
 void hashy_check_grow(Map *map) {
     if (map->used < map->size / 2)
         return;
@@ -35,19 +49,7 @@ void hashy_check_grow(Map *map) {
     free(map->map);
     map->map = new_map;
 
-    for (slice_index i = 0; i != map->size; ++i)
-        new_map[i] = -1;
-
-    for (slice_index i = 0; i != map->used; ++i) {
-        u64 hash_index =
-            fnv1a(sarray_get(&map->keys, i)) % (map->size - 1);
-
-        while (new_map[hash_index] != -1)
-            hash_index = (hash_index + 1) % (map->size - 1);
-
-        new_map[hash_index] = i;
-    }
-
+    hashy_rehash(map);
 }
 
 Map hashy_create(size_t byte_width) {
@@ -61,10 +63,25 @@ Map hashy_create(size_t byte_width) {
         .used = 0,
     };
 
-    for (slice_index i = 0; i != slots; ++i)
-        map.map[i] = -1;
+    memset(map.map, ~0, map.size * sizeof(slice_index));
 
     return map;
+}
+
+void hashy_remove(Map *map, const char *key) {
+    u64 hash_index = fnv1a(key) % (map->size - 1);
+
+    while (map->map[hash_index] != -1) {
+        if (strcmp(key, sarray_get(&map->keys, map->map[hash_index])) == 0) {
+            slice_serial_remove(&map->value_data, map->map[hash_index]);
+            sarray_remove(&map->keys, map->map[hash_index]);
+            map->used -= 1;
+            hashy_rehash(map);
+            return;
+        }
+
+        hash_index = (hash_index + 1) % (map->size - 1);
+    }
 }
 
 void hashy_install(Map *map, const char *key, const void *data) {
