@@ -1,7 +1,8 @@
 #pragma once
 #include <ctype.h>
 #include <stdio.h>
-#include "types.h"
+#include <stdlib.h>
+#include <string.h>
 
 int readline(char line[], int max_size) {
     int i, c;
@@ -156,4 +157,29 @@ int getword(char *buffer, int buf_size) {
     ungetch(c);
 
     return head - buffer;
+}
+
+void mark_tabnewline(char *buffer, int bufsize) {
+    char *write = malloc(bufsize), *read;
+    char *begin = write;
+    for (read = buffer; *read != '\0' && (read - buffer) < bufsize - 1;
+         ++read) {
+        switch (*read) {
+        case '\t':
+            *write++ = '\\';
+            *write++ = 't';
+            break;
+        case '\n':
+            *write++ = '\\';
+            *write++ = 'n';
+            break;
+        default:
+            *write++ = *read;
+        }
+    }
+
+    *write++ = '\0';
+
+    memcpy(buffer, begin, write - begin);
+    free(begin);
 }
