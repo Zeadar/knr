@@ -1,40 +1,84 @@
-#include "string_array.c"
-#include "libkalle.c"
 #include <stdio.h>
+#include <string.h>
+#include <assert.h>
+
+#include "string_array.c"
+
+void test_create_destroy() {
+    Sarray sa = sarray_create();
+    assert(sa.ptr != NULL);
+    assert(sarray_size(&sa) == 0);
+    sarray_destroy(&sa);
+}
+
+void test_push_get() {
+    Sarray sa = sarray_create();
+
+    slice_index a = sarray_push(&sa, "alpha");
+    slice_index b = sarray_push(&sa, "bravo");
+    slice_index c = sarray_push(&sa, "charlie");
+
+    assert(strcmp(sarray_get(&sa, a), "alpha") == 0);
+    assert(strcmp(sarray_get(&sa, b), "bravo") == 0);
+    assert(strcmp(sarray_get(&sa, c), "charlie") == 0);
+
+    sarray_destroy(&sa);
+}
+
+void test_remove_middle() {
+    Sarray sa = sarray_create();
+
+    slice_index a = sarray_push(&sa, "first");
+    slice_index b = sarray_push(&sa, "middle");
+    slice_index c = sarray_push(&sa, "last");
+
+    sarray_remove(&sa, b);      // remove "middle"
+    assert(strcmp(sarray_get(&sa, a), "first") == 0);
+    assert(strcmp(sarray_get(&sa, c - 1), "last") == 0);
+    assert(sarray_size(&sa) == 2);
+
+    sarray_destroy(&sa);
+}
+
+void test_remove_all() {
+    Sarray sa = sarray_create();
+
+    sarray_push(&sa, "1");
+    sarray_push(&sa, "2");
+    sarray_push(&sa, "3");
+
+    sarray_remove(&sa, 2);
+    sarray_remove(&sa, 1);
+    sarray_remove(&sa, 0);
+
+    assert(sarray_size(&sa) == 0);
+
+    sarray_destroy(&sa);
+}
+
+void test_empty_and_duplicates() {
+    Sarray sa = sarray_create();
+
+    sarray_push(&sa, "");
+    sarray_push(&sa, "duplicate");
+    sarray_push(&sa, "duplicate");
+
+    assert(strcmp(sarray_get(&sa, 0), "") == 0);
+    assert(strcmp(sarray_get(&sa, 1), "duplicate") == 0);
+    assert(strcmp(sarray_get(&sa, 2), "duplicate") == 0);
+
+    sarray_destroy(&sa);
+}
 
 int main() {
-    Sarray str1 = sarray_create();
-    char buffer[1024];
+    printf("Running sarray tests...\n");
 
-    for (int i = 0; i != 10; ++i) {
-        itob(i, buffer, 10);
-        strcat(buffer, " Hello");
+    test_create_destroy();
+    test_push_get();
+    test_remove_middle();
+    test_remove_all();
+    test_empty_and_duplicates();
 
-        slice_index idx = sarray_push(&str1, buffer);
-        printf("Index %td\n", idx);
-    }
-
-    printf("%td\n", sarray_size(&str1));
-
-    sarray_remove(&str1, 3);
-    sarray_remove(&str1, 7);
-    sarray_remove(&str1, 1);
-
-    for (int i = 10; i != 15; ++i) {
-        itob(i, buffer, 10);
-        strcat(buffer, " Bye");
-
-        slice_index idx = sarray_push(&str1, buffer);
-        printf("Index %td\n", idx);
-    }
-
-    for (int i = 0; i < sarray_size(&str1); ++i) {
-        char *test = sarray_get(&str1, i);
-
-        printf("Get result i%d %s\n", i, test);
-    }
-
-    printf("%td\n", sarray_size(&str1));
-
+    printf("All tests passed.\n");
     return 0;
 }
